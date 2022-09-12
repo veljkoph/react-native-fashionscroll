@@ -7,11 +7,14 @@ import {
 } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedGestureHandler,
-  useAnimatedScrollHandler,
   useSharedValue,
+  withSpring,
 } from "react-native-reanimated";
+import { clamp, snapPoint } from "react-native-redash";
 import { data } from "./data";
 import Item, { MAX_HEIGHT } from "./Item";
+
+const snapPoints = data.map((_, i) => i * -MAX_HEIGHT);
 
 export default function App() {
   const styles = StyleSheet.create({
@@ -20,7 +23,6 @@ export default function App() {
       backgroundColor: "black",
     },
   });
-
   const [loaded] = useFonts({
     "Cormorant-Light": require("./fonts/Cormorant-Light.ttf"),
     "Cormorant-Medium": require("./fonts/Cormorant-Medium.ttf"),
@@ -29,28 +31,36 @@ export default function App() {
     "Cormorant-Bold": require("./fonts/Cormorant-Bold.ttf"),
   });
   const y = useSharedValue(0);
-  const onScroll = useAnimatedScrollHandler({
-    onScroll: ({ contentOffset: { y: value } }) => {
-      y.value = value;
+  const onScroll = useAnimatedGestureHandler<
+    PanGestureHandlerGestureEvent,
+    { y: number }
+  >({
+    onStart: (_, context) => {
+      context.y = y.value;
+    },
+    onActive: ({ translationY }, context) => {
+      y.value = clamp(
+        context.y + translationY,
+        -(data.length - 1) * MAX_HEIGHT,
+        0
+      );
+    },
+    onEnd: ({ velocityY }) => {
+      const dest = snapPoint(y.value, velocityY, snapPoints);
+      y.value = withSpring(dest, { overshootClamping: true });
     },
   });
   if (!loaded) return null;
   return (
     <>
       <StatusBar hidden />
-      <Animated.ScrollView
-        onScroll={onScroll}
-        scrollEventThrottle={16}
-        style={styles.container}
-        snapToInterval={MAX_HEIGHT}
-        decelerationRate="fast"
-      >
+      <PanGestureHandler onGestureEvent={onScroll}>
         <Animated.View style={styles.container}>
           {data.map((item, index) => (
             <Item item={item} key={index} y={y} index={index} />
           ))}
         </Animated.View>
-      </Animated.ScrollView>
+      </PanGestureHandler>
     </>
   );
 }

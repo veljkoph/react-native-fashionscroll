@@ -26,15 +26,16 @@ const Item = ({ y, index, item: { title, subtitle, image } }: ItemProps) => {
   const inputRange = [(index - 1) * MAX_HEIGHT, index * MAX_HEIGHT];
   const containerStyle = useAnimatedStyle(() => ({
     height: interpolate(
-      y.value,
+      -y.value,
       inputRange,
       [MIN_HEIGHT, MAX_HEIGHT],
       Extrapolate.CLAMP
     ),
+    top: y.value,
   }));
   const subtitleStyle = useAnimatedStyle(() => {
     const opacity = interpolate(
-      y.value,
+      -y.value,
       [(index - 1) * MAX_HEIGHT, index * MAX_HEIGHT],
       [0, 1],
       Extrapolate.CLAMP
@@ -45,6 +46,7 @@ const Item = ({ y, index, item: { title, subtitle, image } }: ItemProps) => {
   });
   const pictureStyle = useAnimatedStyle(() => ({
     height: MAX_HEIGHT,
+
     top: interpolate(
       y.value,
       [(index - 1) * MAX_HEIGHT, index * MAX_HEIGHT],
@@ -56,6 +58,7 @@ const Item = ({ y, index, item: { title, subtitle, image } }: ItemProps) => {
       <Animated.Image
         source={{ uri: image }}
         style={[pictureStyle, styles.picture]}
+        resizeMode="cover"
       />
       <View style={styles.titleContainer}>
         <Text style={styles.title}>{title.toUpperCase()}</Text>
